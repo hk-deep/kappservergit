@@ -1,0 +1,5 @@
+ImagePage¤Page 1@-1/The definition of test is to try and see if it works&0/This is a ssentence to &1/test&0/ the properties of the textBox@0@-1/The definition of to try and see if it works&0/This is a sample sentence to &1/test&0/ the properties of the textBox
+LessonQuizPage¤Page 2@-1/The defion of and see if it works&0/This is a sample sentence to &1/test&0/ the properties of the textBox @2&item/items/itemss/itemss@-1/The definitioofo try and see if it works&0/This is aple sentence to &1/test&0/ the properties of the textBox@1/0/1/0@That's very good/No way you thought that
+ListPage¤Page 3@-1/The definition of test is to try and see if it works&0/This is a sample sentence to &1/test&0/ the perties of the textBox@1&item/item/item/item/item/item/item/item@-1/The defiof test is to try and see if it works&0/This is a sentence to &1/test&0/ the properties of thtextBox
+EndPage¤This is the end@-1/the end&0/This is a sample sentence to &1/test&0/ the properties of the textBox@1@Click here to go away
+TextPage¤Page 4 bonus page@-1/null&0/Hello this is a very long text# and now I've skipped a line@-1/null&0/Hello@-1/null&0/Hello@Learn/0/1/en

@@ -1,0 +1,40 @@
+Text: Core Concepts
+TextBlock:-1/null&0/The core concepts will be investigated and explained in this chapter, they are the following
+ListBlock:1&Time Value of Money/Risk and Return/Asset Classes/Diversification/Investment plan
+TextBlock:-1/null&0/But first let’s start by defining what an investment is
+#
+Text: What is an investment?
+TextBlock:-1/null&0/Investing is the strategic allocation of money with the expectation of generating a profit. An investment can take various forms, such as stocks, bonds, real estate, or mutual funds.
+TextBlock:-1/null&0/Each investment type carries its own risk and return profile. Understanding the fundamentals of investing is crucial for building wealth over time.
+TextBlock:-1/null&0/It involves evaluating opportunities, managing risk, and aligning investments with financial goals to achieve long-term financial success.
+#
+Text: Key Components of Investing
+TextBlock:-1/null&0/It’s important to bear this (seemingly trivial) definition in mind as it contains the answer to a very important question. What do you think you need to are the key components of a sound investment approach ?
+ListBlock:3&Short-term gains/Risk and diversification/Long-term perspective/Daily market news and fluctuations&false/true/true/false&We're not getting anywhere with you/Damn right
+TextBlock:-1/null&0/Those are not the only ones to take into consideration
+#
+Text:  Key Components of Investing
+TextBlock:-1/null&0/If you want to build a sound investment approach you need to consider the following 
+ListBlock:2&Resources/Expectations/Allocation/Returns/Risk/Time horizon
+TextBlock:-1/null&0/We will go into more details about these and how they interact further down the road.But for now we’d like to discuss why you should invest.
+#
+Text:The importance of investing
+TextBlock:-1/null&0/Investing plays a pivotal role in personal finance by enabling wealth accumulation and financial growth. By putting money to work in assets that have the potential to appreciate, you can outpace inflation and build a robust financial foundation. 
+TextBlock:-1/null&0/Investing also facilitates goal achievement, whether it's buying a home, funding education, or retiring comfortably. The compounding effect further underscores the importance of starting early, emphasizing the need for a strategic and disciplined approach to secure a prosperous financial future.
+#
+Text:Role of Investing
+TextBlock:-1/null&0/Why should you invest?
+ListBlock:3&Build wealth ?/Generate income ?/Achieve other financial goals ?/Beat inflation ?&true/true/true/true&That's no exactly right/Exactly, that's it
+TextBlock:-1/null&0/It is paramount you understand the role of investment in order to set clear goals and choose the right strategy for your goals.
+#
+Text: Role of investing
+TextBlock:-1/null&0/The primary role of investing is to grow wealth over time. Investing allows individuals to make their money work for them by allocating funds to assets that have the potential to appreciate. 
+TextBlock:-1/null&0/Beyond wealth accumulation, investing serves various purposes, including meeting long-term financial goals, funding education, and ensuring a comfortable retirement. 
+TextBlock:-1/null&0/It provides a means to combat inflation, preserve purchasing power, and generate income.
+#
+Text: I'm done with this
+TextBlock:-1/Something that you reall don't want to do, and that is very annoying&0/This is a very &1/gruesome&0/ task that takes a long time which is why I'm gonna teach it to you
+EndBlock: That is why that is the end of this lesson now, i'll do more later. Click here to go away
+#
+
+

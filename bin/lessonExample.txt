@@ -1,0 +1,19 @@
+Text:"Page 1"
+TextBlock:"now way"
+TextBlock:"now way"
+TextBlock:"now way"
+//
+Text:"Page 2"
+TextBlock:"now "
+TextBlock:"now way"
+TextBlock:"now "
+//
+Text:"Page 3"
+TextBlock:"now way"
+TextBlock:"now "
+TextBlock:"now way"
+//
+Text:"This is the end"
+TextBlock:"now way"
+EndBlock:"Click here to go away"
+//
