@@ -67,6 +67,8 @@ final _router = shelf_router.Router()
   ..get('/images/<b>/<lng>', _imagesHandler)
   ..get('/quiz/<a>/<lng>', _quizHandler)
   ..get('/logo', _logoHandler)
+  ..get('/api/changePasswordAndLogoutAllDevices/<email>',
+      _logedOutAndChangedPasswordHandler)
   ..post('/api/changePassword', _passwordChangeHandler)
   ..post('/api/customers', _customerHandler) //all good
   ..post('/api/logout', (request) => Response.ok("Logout complete"))
@@ -106,6 +108,24 @@ Future<List> dbLink(String query) async {
   }
   conn.close();
   return rows;
+}
+
+Future<Response> _logedOutAndChangedPasswordHandler(
+    Request request, String email) async {
+  String userEmail = email;
+  dbLink(
+      "INSERT INTO enquiries VALUES ('$userEmail' , 'This user has reported a security issue. Someone tried to change their passwords.')");
+  String currentDirectory = path.dirname(Platform.script.toFilePath());
+  String htmlFilePath =
+      path.join(currentDirectory, "assets/fraudulousPasswordReset.html");
+
+  final htmlFile = File(htmlFilePath);
+  if (await htmlFile.exists()) {
+    final htmlContent = await htmlFile.readAsString();
+    return Response.ok(htmlContent, headers: {'Content-Type': 'text/html'});
+  } else {
+    return Response.notFound('Page not found');
+  }
 }
 
 String generateRandomPassword(int length) {
@@ -199,14 +219,14 @@ Future<Response> _recoveryEmailHandler(Request request) async {
         'SELECT language FROM users WHERE email = ?', [email])))[0]["language"];
     connection.close();
 //
-    // String htmlContent =
-    //     "<h1>${translations[language]}</h1> <tr> <td style='padding: 20px; font-family: Arial, sans-serif; font-size: 12px; color: #888;'> <p>&copy; 2024 Your Company. All rights reserved.</p> <p><a href='https://yourwebsite.com/unsubscribe' style='color: #007bff; text-decoration: none;'>Unsubscribe</a></p> </td></tr>";
     String currentDirectory = path.dirname(Platform.script.toFilePath());
     String htmlFilePath =
-        path.join(currentDirectory, "assets/emailTemplateEn.html");
+        path.join(currentDirectory, "assets/forgotPasswordEmail.html");
     String htmlContent = await File(htmlFilePath).readAsString();
     htmlContent = htmlContent.replaceAll('{yourNewPass}', newTemporaryPass);
     htmlContent = htmlContent.replaceAll('{name}', saltAndHashAndName['name']);
+    htmlContent = htmlContent.replaceAll('{linkToPage}',
+        "https://kappserver-c4sqysuqeq-od.a.run.app/api/changePasswordAndLogoutAllDevices/$email"); //to change
 
     final message = Message()
       ..from = Address('your_email@example.com')
@@ -547,8 +567,52 @@ Future<Response> _customerHandler(Request request) async {
     await conn.query(
         "INSERT INTO tools VALUES ('${customer["email"]}', '$myPerso', '$risk', '$myGoals', '$pockets')");
 
-    //still need to add tools
+    //send welcome email
+    //worse code to ever exist I hate it so much
+    // String currentDirectory = path.dirname(Platform.script.toFilePath());
+    // String email = customer["email"];
+    // String name = customer["name"];
+    // print("here");
+    // String htmlContent = "";
+    // try {
+    //   print("wtf is gonning on");
+
+    //   String htmlFilePath =
+    //       path.join(currentDirectory, "assets/forgotPasswordEmail.html");
+    //   final htmlFile = File(htmlFilePath);
+    //   if (await htmlFile.exists()) {
+    //     htmlContent = await htmlFile.readAsString();
+    //     print("im gonna kill myself");
+
+    //     htmlContent = htmlContent.replaceAll('{name}', name);
+    //     print("how about now");
+    //   } else {
+    //     return Response.notFound('Page not found');
+    //   }
+    // } catch (e) {
+    //   print(e);
+    // }
+
+    // print("there");
+    // final message = Message()
+    //   ..from = Address('your_email@example.com')
+    //   ..recipients.add(email)
+    //   ..subject = "Welcome to Kapp!"
+    //   ..text =
+    //       "Welcome $name!\n Thank you for joining us in the world of finance.\n Here you're going to learn everything you need to know about personal finance, and we'll also give you the tools to apply what you learn \n 2024 Kapp Personal Finance. All rights reserved."
+    //   ..html = htmlContent;
+
+    // // Email exists in the database
+    // try {
+    //   // Send the email
+    //   final smtpServer = SmtpServer('smtp.gmail.com',
+    //       username: 'pierrejean235711@gmail.com', password: 'epdzksyemyhzvgkt');
+    //   await send(message, smtpServer);
+    // } catch (e) {
+    //   print(e);
+    // }
   } on Exception {
+    conn.close();
     return Response.forbidden("user already exists");
   }
   // userDB.addUser(customer);
