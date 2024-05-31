@@ -78,11 +78,148 @@ final _router = shelf_router.Router()
   ..post('/api/contactUs', _contactUsHandler) //all good
   ..post('/api/del', _delHandler) //allgood
   ..post('/api/recovery', _recoveryEmailHandler)
+  ..post('/api/friends', _friendsHandler)
+  ..post('/api/addFriend', _addFriendHandler)
+  ..post('/api/acceptRequest', _acceptFriendRequestHandler)
+  ..post('/api/deleteFriend', _removeFriendHandler)
   ..post('/api/updateUser',
       _userUpdateHandler) //works, but to be tested further in app, and all values need to be strings
   ..post('/tools/<id>', _toolGetHandler)
   ..post('/tools/update/<id>', _toolUpdateHandler);
 
+//docker build kappservergit -t europe-west9-docker.pkg.dev/x-circle-416916/myrep/firstkappimage:latest
+//docker push europe-west9-docker.pkg.dev/x-circle-416916/myrep/firstkappimage:latest
+
+//Friend handler
+//
+//
+//
+//
+
+//we create two new databases, one dual with names of existing friendships "friends" and one with requests "friendRequests"
+//first column of friend request is always the sender, second the receiver
+//we also create a tag column in the users database
+//right now anyone can pull anyones friends, we need to add a check to see if the user given corresponds to the token
+//incomplete
+Future<Response> _friendsHandler(Request request) async {
+  var value = await utf8.decodeStream(request.read());
+  var decodedValue = jsonDecode(value);
+  String token = decodedValue['token'];
+  String myId = decodedValue['myId'];
+  if (_isValidToken(token)) {
+    MySqlConnection conn =
+        await MySqlConnection.connect(settings, isUnixSocket: true);
+    //deleted to save some request time
+    // Map myInfo = responseToList(
+    //     await conn.query("SELECT name, tag FROM users WHERE email = '$subject'"))[0];
+    //     String myId = "${myInfo["name"]}#${myInfo["tag"]}";
+    List friends = responseToList(await conn.query(
+        "SELECT CASE WHEN column1 = '$myId' THEN column2 WHEN column2 = '$myId' THEN column1 END AS other_column FROM friends WHERE '$myId' IN (column1, column2);")); //gets ids of the user's friends
+    for (int i = 0; i < friends.length; i++) {
+      List friendsId = friends[i]["other_column"].split("#");
+      friends[i] = responseToList(await conn.query(
+              "SELECT name, exP, level, tag FROM users WHERE name = '${friendsId[0]}' AND tag = '${friendsId[1]}' "))[
+          0]; //replaces friendId with Map of values for the friend
+    }
+    List friendRequests = responseToList(await conn.query(
+        "SELECT column1 FROM friendRequests WHERE column2 = '$myId'")); //gets ids of the user's friend requests
+    Map toSend = {"friends": friends, "friendRequests": friendRequests};
+    conn.close();
+
+    return Response.ok(jsonEncode(toSend)); //list of maps of friends
+  } else {
+    return Response.notFound("Invalid Token");
+  }
+}
+
+//same problem here, anyone with a valid token can add any friendrequest
+//incomplete
+Future<Response> _addFriendHandler(Request request) async {
+  var value = await utf8.decodeStream(request.read());
+  var decodedValue = jsonDecode(value);
+  String token = decodedValue['token'];
+  String identifier = decodedValue['identifier'];
+  String myId = decodedValue['myId'];
+  List nameAndTag = identifier.split("#");
+  if (_isValidToken(token)) {
+    MySqlConnection conn =
+        await MySqlConnection.connect(settings, isUnixSocket: true);
+    var results = await conn.query(
+        "SELECT name FROM users WHERE name = '${nameAndTag[0]}' AND tag = '${nameAndTag[1]}'");
+    if (results.isNotEmpty) {
+      conn.query("INSERT INTO friendRequests VALUES ('$myId', '$identifier')");
+      conn.close();
+      return Response.ok("Friend request sent");
+    } else {
+      conn.close();
+      return Response.notFound("User not found");
+    }
+  } else {
+    return Response.notFound("Invalid Token");
+  }
+}
+
+//anyone can delete anything
+//incomplete
+Future<Response> _removeFriendHandler(Request request) async {
+  var value = await utf8.decodeStream(request.read());
+  var decodedValue = jsonDecode(value);
+  String token = decodedValue['token'];
+  String identifier = decodedValue['identifier'];
+  String myId = decodedValue['myId'];
+  if (_isValidToken(token)) {
+    MySqlConnection conn =
+        await MySqlConnection.connect(settings, isUnixSocket: true);
+    conn.query(
+        "DELETE FROM friends WHERE column1 = '$identifier' AND column2 = '$myId'");
+    conn.query(
+        "DELETE FROM friends WHERE column2 = '$identifier' AND column1 = '$myId'");
+    conn.query(
+        "DELETE FROM friendRequests WHERE column1 = '$identifier' AND column2 = '$myId'"); //first column is user who asked, second is user who received
+    //above we delete the case where the user refuses the friend request
+    conn.close();
+    return Response.ok("Deleted"); //list of maps of friends
+  } else {
+    return Response.notFound("Invalid Token");
+  }
+}
+
+Future<Response> _acceptFriendRequestHandler(Request request) async {
+  var value = await utf8.decodeStream(request.read());
+  var decodedValue = jsonDecode(value);
+  String token = decodedValue['token'];
+  String identifier = decodedValue['identifier'];
+  String myId = decodedValue['myId'];
+  if (_isValidToken(token)) {
+    MySqlConnection conn =
+        await MySqlConnection.connect(settings, isUnixSocket: true);
+    List friendRequest = responseToList(await conn.query(
+        "SELECT column1, column2 FROM friendRequests WHERE column1 = '$identifier' AND column2 = '$myId'"));
+    if (friendRequest.isNotEmpty) {
+      Map request = friendRequest[0];
+      conn.query(
+          "DELETE FROM friendRequests WHERE column1 = '$identifier' AND column2 = '$myId'");
+      conn.query(
+          "INSERT INTO friends VALUES ('${request["column1"]}', '${request["column2"]}')");
+      List friendsId = identifier.split("#");
+      Map newFriend = responseToList(await conn.query(
+          "SELECT name, exP, level, tag FROM users WHERE name = '${friendsId[0]}' AND tag = '${friendsId[1]}'"))[0];
+      conn.close();
+      return Response.ok(jsonEncode(newFriend)); //sends back info on new friend
+    } else {
+      conn.close();
+      return Response.notFound("No friend request found");
+    }
+  } else {
+    return Response.notFound("Invalid Token");
+  }
+}
+
+//
+//
+//
+//
+//
 Future<Response> _logoHandler(Request request) async {
   String currentDirectory = path.dirname(Platform.script.toFilePath());
   String filePath =
@@ -444,7 +581,7 @@ Future<Response> _tokenLog(Request request) async {
     JwtClaim claim = verifyJwtHS256Signature(token, Properties.jwtSecret);
     String? subject = claim.subject;
     List info1 = responseToList(await conn.query(
-        "SELECT email, name, token, exP, level, language, theoreticalLevel, progress, stats, dicoUnlock, settings FROM users WHERE email='$subject';")); //problem between XP and exP notations
+        "SELECT email, name, token, exP, level, language, theoreticalLevel, progress, stats, dicoUnlock, settings, tag FROM users WHERE email='$subject';")); //problem between XP and exP notations
     // List stats = responseToList(
     //     await conn.query("SELECT * FROM stats WHERE email = '$subject';"));
     // List dicoUnlock = responseToList(
@@ -480,6 +617,7 @@ bool _isValidToken(String token) {
 Future<Response> _customerHandler(Request request) async {
   var value = await utf8.decodeStream(request.read());
   Map<String, dynamic> customer = jsonDecode(value)['customer'];
+  int tag = Random().nextInt(9000) + 1000;
   MySqlConnection conn =
       await MySqlConnection.connect(settings, isUnixSocket: true);
   try {
@@ -509,7 +647,7 @@ Future<Response> _customerHandler(Request request) async {
           100,
           0,
           0
-        ])}', '${jsonEncode([0, 1])}');");
+        ])}', '${jsonEncode([0, 1])}', '$tag');"); //adds tag
     await conn.query("INSERT INTO emailList VALUES ('${customer["email"]}');");
     // await conn.query(
     //     "INSERT INTO dicoUnlock VALUES ('${customer["email"]}', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0');");
@@ -636,7 +774,7 @@ Future<Response> _authHandler(Request request) async {
         await conn.query("SELECT hash FROM users WHERE email = '$subject';"));
     if (pass[0]["hash"] == decodedValue["password"]) {
       List info1 = responseToList(await conn.query(
-          "SELECT email, name, token, exP, level, language, theoreticalLevel, progress, stats, dicoUnlock, settings FROM users WHERE email='$subject';")); //problem between XP and exP notations
+          "SELECT email, name, token, exP, level, language, theoreticalLevel, progress, stats, dicoUnlock, settings, tag FROM users WHERE email='$subject';")); //problem between XP and exP notations
       // List stats = responseToList(
       //     await conn.query("SELECT * FROM stats WHERE email = '$subject';"));
       // List dicoUnlock = responseToList(await conn
