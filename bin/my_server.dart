@@ -118,7 +118,7 @@ Future<Response> _friendsHandler(Request request) async {
     for (int i = 0; i < friends.length; i++) {
       List friendsId = friends[i]["other_column"].split("#");
       friends[i] = responseToList(await conn.query(
-              "SELECT name, exP, level, tag FROM users WHERE name = '${friendsId[0]}' AND tag = '${friendsId[1]}' "))[
+              "SELECT name, exP, level, tag, avatar FROM users WHERE name = '${friendsId[0]}' AND tag = '${friendsId[1]}' "))[
           0]; //replaces friendId with Map of values for the friend
     }
     List friendRequests = responseToList(await conn.query(
@@ -203,7 +203,7 @@ Future<Response> _acceptFriendRequestHandler(Request request) async {
           "INSERT INTO friends VALUES ('${request["column1"]}', '${request["column2"]}')");
       List friendsId = identifier.split("#");
       Map newFriend = responseToList(await conn.query(
-          "SELECT name, exP, level, tag FROM users WHERE name = '${friendsId[0]}' AND tag = '${friendsId[1]}'"))[0];
+          "SELECT name, exP, level, tag, avatar FROM users WHERE name = '${friendsId[0]}' AND tag = '${friendsId[1]}'"))[0];
       conn.close();
       return Response.ok(jsonEncode(newFriend)); //sends back info on new friend
     } else {
@@ -581,7 +581,7 @@ Future<Response> _tokenLog(Request request) async {
     JwtClaim claim = verifyJwtHS256Signature(token, Properties.jwtSecret);
     String? subject = claim.subject;
     List info1 = responseToList(await conn.query(
-        "SELECT email, name, token, exP, level, language, theoreticalLevel, progress, stats, dicoUnlock, settings, tag FROM users WHERE email='$subject';")); //problem between XP and exP notations
+        "SELECT email, name, token, exP, level, language, theoreticalLevel, progress, stats, dicoUnlock, settings, tag, avatar FROM users WHERE email='$subject';")); //problem between XP and exP notations
     // List stats = responseToList(
     //     await conn.query("SELECT * FROM stats WHERE email = '$subject';"));
     // List dicoUnlock = responseToList(
@@ -647,7 +647,10 @@ Future<Response> _customerHandler(Request request) async {
           100,
           0,
           0
-        ])}', '${jsonEncode([0, 1])}', '$tag');"); //adds tag
+        ])}', '${jsonEncode([
+          0,
+          1
+        ])}', '$tag', '00#00#00#00#00#00');"); //adds tag and default avatar
     await conn.query("INSERT INTO emailList VALUES ('${customer["email"]}');");
     // await conn.query(
     //     "INSERT INTO dicoUnlock VALUES ('${customer["email"]}', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0');");
@@ -705,24 +708,48 @@ Future<Response> _customerHandler(Request request) async {
     await conn.query(
         "INSERT INTO tools VALUES ('${customer["email"]}', '$myPerso', '$risk', '$myGoals', '$pockets')");
 
+//okay lets try again
+    String email = customer["email"];
+    String name = customer["name"];
+    String currentDirectory = path.dirname(Platform.script.toFilePath());
+    print(currentDirectory);
+    String htmlFilePath =
+        path.join(currentDirectory, "assets/welcomeEmailEn.html");
+    print(htmlFilePath);
+    final htmlFile = await File(htmlFilePath).readAsString();
+    var htmlContent = htmlFile.replaceAll('{name}', name);
+    print(htmlContent);
+    String text =
+        "Welcome $name!\n Thank you for joining us in the world of finance.\n Here you're going to learn everything you need to know about personal finance, and we'll also give you the tools to apply what you learn \n 2024 Kapp Personal Finance. All rights reserved.";
+    final message = Message()
+      ..from = Address('your_email@example.com')
+      ..recipients.add(email)
+      ..subject = "Welcome to Kapp!"
+      ..text = text
+      ..html = htmlContent;
+    print(message.subject);
+    try {
+      // Send the email
+      final smtpServer = SmtpServer('smtp.gmail.com',
+          username: 'pierrejean235711@gmail.com', password: 'epdzksyemyhzvgkt');
+      await send(message, smtpServer);
+    } catch (e) {
+      print(e);
+    }
     //send welcome email
     //worse code to ever exist I hate it so much
-    // String currentDirectory = path.dirname(Platform.script.toFilePath());
-    // String email = customer["email"];
-    // String name = customer["name"];
+
     // print("here");
     // String htmlContent = "";
     // try {
     //   print("wtf is gonning on");
 
-    //   String htmlFilePath =
-    //       path.join(currentDirectory, "assets/forgotPasswordEmail.html");
-    //   final htmlFile = File(htmlFilePath);
+    //
     //   if (await htmlFile.exists()) {
     //     htmlContent = await htmlFile.readAsString();
     //     print("im gonna kill myself");
 
-    //     htmlContent = htmlContent.replaceAll('{name}', name);
+    //
     //     print("how about now");
     //   } else {
     //     return Response.notFound('Page not found');
@@ -732,23 +759,8 @@ Future<Response> _customerHandler(Request request) async {
     // }
 
     // print("there");
-    // final message = Message()
-    //   ..from = Address('your_email@example.com')
-    //   ..recipients.add(email)
-    //   ..subject = "Welcome to Kapp!"
-    //   ..text =
-    //       "Welcome $name!\n Thank you for joining us in the world of finance.\n Here you're going to learn everything you need to know about personal finance, and we'll also give you the tools to apply what you learn \n 2024 Kapp Personal Finance. All rights reserved."
-    //   ..html = htmlContent;
 
     // // Email exists in the database
-    // try {
-    //   // Send the email
-    //   final smtpServer = SmtpServer('smtp.gmail.com',
-    //       username: 'pierrejean235711@gmail.com', password: 'epdzksyemyhzvgkt');
-    //   await send(message, smtpServer);
-    // } catch (e) {
-    //   print(e);
-    // }
   } on Exception {
     conn.close();
     return Response.forbidden("user already exists");
@@ -774,7 +786,7 @@ Future<Response> _authHandler(Request request) async {
         await conn.query("SELECT hash FROM users WHERE email = '$subject';"));
     if (pass[0]["hash"] == decodedValue["password"]) {
       List info1 = responseToList(await conn.query(
-          "SELECT email, name, token, exP, level, language, theoreticalLevel, progress, stats, dicoUnlock, settings, tag FROM users WHERE email='$subject';")); //problem between XP and exP notations
+          "SELECT email, name, token, exP, level, language, theoreticalLevel, progress, stats, dicoUnlock, settings, tag, avatar FROM users WHERE email='$subject';")); //problem between XP and exP notations
       // List stats = responseToList(
       //     await conn.query("SELECT * FROM stats WHERE email = '$subject';"));
       // List dicoUnlock = responseToList(await conn
