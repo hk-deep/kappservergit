@@ -12,28 +12,28 @@ class LessonDB {
 
   List imageList = [
     [
-      "thumbsUp",
-      "thumbsUp",
+      "thumbsUp.png",
+      "thumbsUp.png",
     ],
     [
-      "thumbsUp",
-      "thumbsUp",
+      "thumbsUp.png",
+      "thumbsUp.png",
     ],
     [
-      "thumbsUp",
-      "thumbsUp",
+      "thumbsUp.png",
+      "thumbsUp.png",
     ],
     [
-      "thumbsUp",
-      "thumbsUp",
+      "thumbsUp.png",
+      "thumbsUp.png",
     ],
     [
-      "thumbsUp",
-      "thumbsUp",
+      "thumbsUp.png",
+      "thumbsUp.png",
     ],
     [
-      "thumbsUp",
-      "thumbsUp",
+      "thumbsUp.png",
+      "thumbsUp.png",
     ],
   ];
 }

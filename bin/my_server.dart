@@ -19,6 +19,7 @@ import 'package:mysql1/mysql1.dart';
 
 import 'db.dart';
 import 'package:path/path.dart' as path;
+import './get_storage.dart';
 
 import 'user_element.dart';
 
@@ -63,6 +64,7 @@ Future<void> main() async {
 }
 
 final _router = shelf_router.Router()
+  ..get('/storageTest', StorageBucket.bucketTestHandler)
   ..get('/lesson/<b>/<lng>', _lessonHandler)
   ..get('/images/<b>/<lng>', _imagesHandler)
   ..get('/quiz/<a>/<lng>', _quizHandler)
@@ -117,14 +119,21 @@ Future<Response> _friendsHandler(Request request) async {
         "SELECT CASE WHEN column1 = '$myId' THEN column2 WHEN column2 = '$myId' THEN column1 END AS other_column FROM friends WHERE '$myId' IN (column1, column2);")); //gets ids of the user's friends
     for (int i = 0; i < friends.length; i++) {
       List friendsId = friends[i]["other_column"].split("#");
-      friends[i] = responseToList(await conn.query(
-              "SELECT name, exP, level, tag, avatar FROM users WHERE name = '${friendsId[0]}' AND tag = '${friendsId[1]}' "))[
-          0]; //replaces friendId with Map of values for the friend
+      List retrieveFriend = responseToList(await conn.query(
+          "SELECT name, exP, level, tag, avatar FROM users WHERE name = '${friendsId[0]}' AND tag = '${friendsId[1]}' "));
+      if (retrieveFriend.isNotEmpty) {
+        friends[i] = retrieveFriend[0];
+      } else {
+        friends.removeAt(i);
+        i--;
+      }
+      //replaces friendId with Map of values for the friend
     }
+    print("test1");
     List friendRequests = responseToList(await conn.query(
         "SELECT column1 FROM friendRequests WHERE column2 = '$myId'")); //gets ids of the user's friend requests
-    Map toSend = {"friends": friends, "friendRequests": friendRequests};
     conn.close();
+    Map toSend = {"friends": friends, "friendRequests": friendRequests};
 
     return Response.ok(jsonEncode(toSend)); //list of maps of friends
   } else {
@@ -145,8 +154,8 @@ Future<Response> _addFriendHandler(Request request) async {
     MySqlConnection conn =
         await MySqlConnection.connect(settings, isUnixSocket: true);
     var results = await conn.query(
-        "SELECT name FROM users WHERE name = '${nameAndTag[0]}' AND tag = '${nameAndTag[1]}'");
-    if (results.isNotEmpty) {
+        "SELECT COUNT(*) as count FROM users WHERE name = '${nameAndTag[0]}' AND tag = '${nameAndTag[1]}'");
+    if (results.first["count"] > 0) {
       conn.query("INSERT INTO friendRequests VALUES ('$myId', '$identifier')");
       conn.close();
       return Response.ok("Friend request sent");
@@ -376,7 +385,8 @@ Future<Response> _recoveryEmailHandler(Request request) async {
     try {
       // Send the email
       final smtpServer = SmtpServer('smtp.gmail.com',
-          username: 'pierrejean235711@gmail.com', password: 'epdzksyemyhzvgkt');
+          username: 'kapp.kube.solutions@gmail.com',
+          password: 'liin glad hxkr qzwc');
       await send(message, smtpServer);
       return Response.ok('Email sent');
     } catch (e) {
@@ -423,9 +433,14 @@ Future<Response> _delHandler(Request request) async {
 
 List responseToList(var results) {
   List<Map<String, dynamic>> rows = [];
-  for (var row in results) {
-    rows.add(row.fields);
+  if (results.isEmpty) {
+    return [];
+  } else {
+    for (var row in results) {
+      rows.add(row.fields);
+    }
   }
+
   return rows;
 }
 
@@ -618,6 +633,38 @@ Future<Response> _customerHandler(Request request) async {
   var value = await utf8.decodeStream(request.read());
   Map<String, dynamic> customer = jsonDecode(value)['customer'];
   int tag = Random().nextInt(9000) + 1000;
+  //okay lets try again
+  String email = customer["email"];
+  String name = customer["name"];
+  String currentDirectory = path.dirname(Platform.script.toFilePath());
+  print(currentDirectory);
+  String htmlFilePath =
+      path.join(currentDirectory, "assets/welcomeEmailEn.html");
+  print(htmlFilePath);
+  final htmlFile = await File(htmlFilePath).readAsString();
+  var htmlContent = htmlFile.replaceAll('{name}', name);
+  print(htmlContent);
+
+  String text =
+      "Welcome $name!\n Thank you for joining us in the world of finance.\n Here you're going to learn everything you need to know about personal finance, and we'll also give you the tools to apply what you learn \n 2024 Kapp Personal Finance. All rights reserved.";
+  final message = Message()
+    ..from = Address('your_email@example.com')
+    ..recipients.add(email)
+    ..subject = "Welcome to Kapp!"
+    ..text = text
+    ..html = htmlContent;
+  print(message.subject);
+  try {
+    // Send the email
+    final smtpServer = SmtpServer('smtp.gmail.com',
+        username: 'kapp.kube.solutions@gmail.com',
+        password: 'liin glad hxkr qzwc');
+    await send(message, smtpServer);
+  } catch (e) {
+    print(e);
+  }
+  //end of weird shit
+
   MySqlConnection conn =
       await MySqlConnection.connect(settings, isUnixSocket: true);
   try {
@@ -708,34 +755,6 @@ Future<Response> _customerHandler(Request request) async {
     await conn.query(
         "INSERT INTO tools VALUES ('${customer["email"]}', '$myPerso', '$risk', '$myGoals', '$pockets')");
 
-//okay lets try again
-    String email = customer["email"];
-    String name = customer["name"];
-    String currentDirectory = path.dirname(Platform.script.toFilePath());
-    print(currentDirectory);
-    String htmlFilePath =
-        path.join(currentDirectory, "assets/welcomeEmailEn.html");
-    print(htmlFilePath);
-    final htmlFile = await File(htmlFilePath).readAsString();
-    var htmlContent = htmlFile.replaceAll('{name}', name);
-    print(htmlContent);
-    String text =
-        "Welcome $name!\n Thank you for joining us in the world of finance.\n Here you're going to learn everything you need to know about personal finance, and we'll also give you the tools to apply what you learn \n 2024 Kapp Personal Finance. All rights reserved.";
-    final message = Message()
-      ..from = Address('your_email@example.com')
-      ..recipients.add(email)
-      ..subject = "Welcome to Kapp!"
-      ..text = text
-      ..html = htmlContent;
-    print(message.subject);
-    try {
-      // Send the email
-      final smtpServer = SmtpServer('smtp.gmail.com',
-          username: 'pierrejean235711@gmail.com', password: 'epdzksyemyhzvgkt');
-      await send(message, smtpServer);
-    } catch (e) {
-      print(e);
-    }
     //send welcome email
     //worse code to ever exist I hate it so much
 
@@ -845,12 +864,13 @@ Future<Response> _imagesHandler(Request request, String b, String lng) async {
   //not using language for now
   //
 
-  String currentDirectory = path.dirname(Platform.script.toFilePath());
+  // String currentDirectory = path.dirname(Platform.script.toFilePath());
   List<String> images = [
     for (String thisPath in lessonDB.imageList[lessonNum])
-      base64Encode(
-          await File(path.join(currentDirectory, "assets/$thisPath.png"))
-              .readAsBytes())
+      base64Encode(await StorageBucket.getPic(thisPath))
+    //     base64Encode(
+    // await File(path.join(currentDirectory, "assets/$thisPath.png"))
+    //     .readAsBytes())
   ];
   return Response.ok(_jsonEncode({'images': images}), headers: {
     ..._jsonHeaders,

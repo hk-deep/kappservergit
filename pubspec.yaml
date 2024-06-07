@@ -17,6 +17,8 @@ dependencies:
   path: ^1.9.0
   crypto: ^3.0.3
   mailer: ^6.1.0
+  googleapis_auth: ^1.6.0
+  googleapis: ^13.1.0
   # path: ^1.8.0
 
 dev_dependencies:
